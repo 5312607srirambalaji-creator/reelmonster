@@ -25,17 +25,23 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Gradle
+      - name: Setup Compatible Gradle
         uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
 
-      - name: Build Debug APK
+      - name: Fix Repository Conflict & Build APK
         run: |
-          chmod +x ./gradlew 2>/dev/null || true
-          ./gradlew assembleDebug || gradle assembleDebug
+          # Remove strict repository mode so build.gradle doesn't conflict
+          sed -i 's/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g' settings.gradle 2>/dev/null || true
+          sed -i 's/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g' */settings.gradle 2>/dev/null || true
+          
+          # Compile the APK
+          gradle assembleDebug --stacktrace
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: ReelMonster-APK
-          path: app/build/outputs/apk/debug/*.apk
+          path: "**/build/outputs/apk/debug/*.apk"
